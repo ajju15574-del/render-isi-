@@ -4,12 +4,13 @@ import numpy as np
 import time
 from datetime import datetime
 import threading
+import os
 
 app = Flask(__name__)
 
-# टेलीग्राम बॉट सेटअप
-BOT_TOKEN = '8261503686:AAFuN0H57q6pn_OgtLjiNWZPnNgNBe6xIiY'
-CHAT_ID = '1141123914'
+# टेलीग्राम बॉट सेटअप (Environment variables से)
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '8261503686:AAFuN0H57q6pn_OgtLjiNWZPnNgNBe6xIiY')
+CHAT_ID = os.environ.get('CHAT_ID', '1141123914')
 
 # Telegram message भेजने का function
 def send_telegram_message(message):
@@ -146,12 +147,19 @@ def home():
 def health():
     return "✅ Bot is healthy!"
 
-# Start monitoring in a separate thread
-@app.before_first_request
+# Start monitoring thread when app starts
+monitor_thread = None
+
 def start_monitoring():
-    monitor_thread = threading.Thread(target=monitor_rsi)
-    monitor_thread.daemon = True
-    monitor_thread.start()
+    global monitor_thread
+    if monitor_thread is None or not monitor_thread.is_alive():
+        monitor_thread = threading.Thread(target=monitor_rsi)
+        monitor_thread.daemon = True
+        monitor_thread.start()
+        print("Monitoring thread started")
+
+# Manual start of monitoring when the app starts
+start_monitoring()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
